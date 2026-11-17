@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        args: [--redact]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-json
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.105.0
+    hooks:
+      - id: terraform_fmt
+  - repo: local
+    hooks:
+      - id: terraform-tflint
+        name: TFLint всех root modules
+        entry: scripts/validate_iac.sh lint
+        language: system
+        pass_filenames: false
+        files: \.tf$
+      - id: terraform-trivy
+        name: Trivy config всех root modules
+        entry: scripts/validate_iac.sh security
+        language: system
+        pass_filenames: false
+        files: \.tf$

@@ -1,0 +1,11 @@
+provider_installation {
+  network_mirror {
+    url     = "https://nexus.example.invalid/repository/terraform-remote-yandex-providers/"
+    include = ["registry.terraform.io/*/*"]
+  }
+
+  # Fail closed: provider packages must not bypass Nexus.
+  direct {
+    exclude = ["registry.terraform.io/*/*"]
+  }
+}

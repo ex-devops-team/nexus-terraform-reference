@@ -1,0 +1,3 @@
+# Исключения добавляются только через отдельный reviewed PR.
+# Каждое исключение обязано иметь paths, statement и expired_at.
+misconfigurations: []
