@@ -1,0 +1,82 @@
+name: Проверка Terraform
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Установить Node.js для Terraform wrapper
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.10.0"
+          package-manager-cache: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+      - name: Проверить форматирование
+        run: terraform fmt -check -recursive
+      - name: Установить Gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          archive="$RUNNER_TEMP/gitleaks.tar.gz"
+          install_dir="$RUNNER_TEMP/gitleaks"
+          curl --fail --silent --show-error --location \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            --output "$archive"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check
+          mkdir -p "$install_dir"
+          tar -xzf "$archive" -C "$install_dir" gitleaks
+          echo "$install_dir" >> "$GITHUB_PATH"
+      - name: Проверить отсутствие секретов
+        run: gitleaks git --no-banner --redact --verbose .
+
+
+  validate:
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        root:
+          - environments/nonprod-proxy
+          - modules/productspace-repositories
+    steps:
+      - name: Установить Node.js для Terraform wrapper
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.10.0"
+          package-manager-cache: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+      - name: Инициализировать root module
+        working-directory: ${{ matrix.root }}
+        run: terraform init -backend=false -input=false
+      - name: Проверить root module
+        working-directory: ${{ matrix.root }}
+        run: terraform validate
+
+  iac:
+    name: TFLint и Trivy
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Установить Node.js для Actions runtime
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.10.0"
+          package-manager-cache: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Установить pinned IaC tools
+        run: |
+          scripts/install_iac_tools.sh "$RUNNER_TEMP/iac-tools"
+          echo "$RUNNER_TEMP/iac-tools" >> "$GITHUB_PATH"
+      - name: Проверить все Terraform root modules
+        run: scripts/validate_iac.sh all

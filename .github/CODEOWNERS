@@ -1,0 +1,9 @@
+# Repository ownership. Access is managed through organization teams.
+* @ex-devops-team/development-platform
+
+# Изменение security gates и исключений требует repository owner review.
+/.github/workflows/validate.yml @ex-devops-team/development-platform
+/.tflint.hcl @ex-devops-team/development-platform
+/.trivyignore.yaml @ex-devops-team/development-platform
+/scripts/install_iac_tools.sh @ex-devops-team/development-platform
+/scripts/validate_iac.sh @ex-devops-team/development-platform

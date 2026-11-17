@@ -1,0 +1,2 @@
+# Lock-файл root module не относится к переиспользуемому модулю.
+.terraform.lock.hcl
